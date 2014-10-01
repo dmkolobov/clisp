@@ -9,38 +9,30 @@ cell_t * eval( cell_t * cell, struct Env * env ){
 		return load_binding( env, (char *) cell->value );
 
 	else if( cell->type == C_LIST ){
-		cell_t * op = (cell_t *) cell->value;
+		cell_t * operator = (cell_t *) cell->value;
 
-		if( op->type == C_SPECIAL )
+		if( operator->type == C_SPECIAL )
 			return eval_special( cell, env );
-		else 			
-			return apply( eval( op, env ), eval_operands( cell->value->next, env ), env );
-		
-	}
-
-}
-
-cell_t * eval_operands( cell_t * operands, struct Env * env ){
-
-	if( operands == NULL )
-		return NULL;
-	else {
-		cell_t * value = copy_cell( eval( operands, env ) );
-		value->next = eval_operands( operands->next, env );
-		return value;
-	}
-
-}
-
-cell_t * apply( cell_t * op, cell_t * operands, struct Env * env ){
+		else {
 	
-	if( op->type == C_LAMBDA )
-		return apply_lambda( (lambda_t) op->value, operands, env );
+			cell_t * operands = operator->next ;
 
-	else if( op->type == C_PRIMITIVE )
-		return apply_primitive( (primitive_t) op->value, operands, env );
+			return apply( eval( operator, env ), operands, env );
+
+		}		
+	}
+
+}
+
+cell_t * apply( cell_t * operator, cell_t * operands, struct Env * env ){
+	
+	if( operator->type == C_LAMBDA )
+		return apply_lambda( (lambda_t) operator->value, operands, env );
+
+	else if( operator->type == C_PRIMITIVE )
+		return apply_primitive( (primitive_t) operator->value, operands, env );
 
 	else
-		return undefined("Undefined application of non procedure.";
+		return error( "Undefined application of non-procedure", operator );
 	
 }

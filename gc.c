@@ -7,41 +7,33 @@ void initialize(){
 
 	cell_t ** cells = calloc( CELL_BLOCK_SIZE, sizeof(cell_t) );
 	cell_record_t ** cell_records = calloc( CELL_BLOCK_SIZE, sizeof(cell_record_t) );
-	cell_record_t * iter = NULL;
 
 	for( i = 0; i < CELL_BLOCK_SIZE; i++ ){
+		// Associate cell[i] with cell_record[i]
 		cell_records[i]->cell = cells[i];
 		cells[i] = cell_records[i];
-		cell_records[i]->next = iter;
-		iter = cell_records[i];
+
+		// Chain cell_records
+		if( CELL_BLOCK_SIZE - i > 1 )
+			cell_records[i]->next = cell_record[i+1];
 	}
 	
-	free_cells = iter;
+	free_cells = cell_record[0];
 }
 
 void garbage_collect(){
 	cell_record_t * survivors = NULL;
 	cell_record_t * iter = live_cells;
 
-	cell_t * dead_cell;
-
 	while( iter != NULL ){
 		live_cells = iter->next;	
 
 		if( iter->ref_count == 0 ){
+			// clean up any allocated value memory and zero cell memory.
+			free_cell( iter->cell );
+			
+			// Add cell record to free cell list.
 			iter->next = free_cells;
-			
-			dead_cell = iter->cell;
-			
-			switch( dead_cell->type ){
-				case C_NUMBER:
-				case C_SYMBOL:
-				case C_LAMBDA:
-					free( cell->value );
-					break;
-			}
-
-			memset( dead_cell, 0, sizeof(cell_t) ); 
 			free_cells = iter;
 		} else {
 			iter->next = survivors;
@@ -51,6 +43,20 @@ void garbage_collect(){
 	}
 
 	live_cells = survivors;
+}
+
+void free_cell( cell_t * cell ){
+
+	switch( cell->type ){
+		case C_NUMBER:
+		case C_SYMBOL:
+		case C_LAMBDA:
+			free( cell->value );
+			break;
+	}
+
+	memset( cell, 0, sizeof(cell_t) ); 
+
 }
 
 void iter_cells( cell_t * cell, void (*visit)(cell_t *)){
@@ -79,7 +85,7 @@ void increment_ref_count( cell_t * cell ){
 	iter_cells( cell, &inc_ref_count );
 }
 void decrement_ref_count( cell_t * cell ){
-	iter_cells( cell, &dec_ref_count ;
+	iter_cells( cell, &dec_ref_count );
 }
 
 cell_t * alloc_cell(){
@@ -104,7 +110,7 @@ cell_t * copy_cell( cell_t * cell ){
 
 	} else if( cell->type == C_SYMBOL ){
 
-		int length = strlen( cell->value + 1 );
+		int length = strlen( cell->value ) + 1;
 		cell_copy->value = calloc( length, sizeof(char) );
 		strncopy( cell_copy->value, cell->value, length );
 

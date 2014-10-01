@@ -1,14 +1,17 @@
 #include "lambda.h"
 
-struct Env * bind_operands( lambda_t * lambda, cell_t * operands ){
+struct Env * bind_operands( lambda_t * lambda, cell_t * operands, struct Env * env ){
 
 	struct Env * lenv = bind_env( lambda->closure );
 
+	cell_t * operand_value;
 	cell_t * operand = operands;
 	cell_t * parameter = lambda->parameters;
 	
 	while( operand != NULL && parameter != NULL ){
-		make_binding( lenv, (char *) parameter->value, operand );
+		operand_value = eval( operand, env );
+
+		make_binding( lenv, (char *) parameter->value, operand_value );
 		operand = operand->next;
 		parameter = paramter->next;
 	}
@@ -19,7 +22,7 @@ struct Env * bind_operands( lambda_t * lambda, cell_t * operands ){
 
 cell_t * apply_lambda( lambda_t * lambda, cell_t * operands, struct Env * env ){
 
-	struct Env * lenv = bind_operands( lambda, operands );
+	struct Env * lenv = bind_operands( lambda, operands, env );
 
 	cell_t * s_expression = lambda->body;
 	cell_t * value;
